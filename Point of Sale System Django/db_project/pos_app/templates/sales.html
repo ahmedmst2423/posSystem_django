@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            background-color: #3498db;
+            padding: 10px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        #salesTable {
+            width: 50%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #salesTable th, #salesTable td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        #salesTable th {
+            background-color: #3498db;
+            color: white;
+        }
+
+        #salesTable tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        #salesTable tbody tr:hover {
+            background-color: #e0e0e0;
+        }
+
+        #chartContainer {
+            width: 80%;
+            margin-top: 20px;
+        }
+
+        #salesChart, #revenueChart {
+            width: 400px;
+            height: 400px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Sales Details</h1>
+
+<!-- Table to display sales data -->
+<table id="salesTable">
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Total Sales</th>
+            <th>Revenue</th>
+        </tr>
+    </thead>
+    <tbody id="salesData">
+        <!-- Table data will be inserted here -->
+    </tbody>
+</table>
+
+<!-- Chart container for Total Sales -->
+<div id="chartContainer">
+    <canvas id="salesChart"></canvas>
+</div>
+
+<!-- Chart container for Revenue -->
+<div id="chartContainer">
+    <canvas id="revenueChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Function to fetch sales data from the backend
+    function fetchSalesData() {
+        fetch('/sales-processing/')  // Replace with your actual backend URL
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch sales data');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data Received:', data);
+
+                if (data.sales_data) {
+                    // Display the received data in the table
+                    displaySalesData(data.sales_data);
+
+                    // Graph the data
+                    graphSalesData(data.sales_data);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching sales data:', error);
+            });
+    }
+
+    // Function to display sales data in the table
+    function displaySalesData(data) {
+        const salesDataBody = document.getElementById('salesData');
+
+        // Clear existing rows
+        salesDataBody.innerHTML = '';
+
+        // Populate the table with data
+        data.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${item.category_name}</td><td>${item.total_sales}</td><td>${item.total_amount}</td>`;
+            salesDataBody.appendChild(row);
+        });
+    }
+
+    // Function to graph sales data
+    function graphSalesData(data) {
+        const salesCtx = document.getElementById('salesChart').getContext('2d');
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+
+        const categories = data.map(item => item.category_name);
+        const totalSales = data.map(item => item.total_sales);
+        const revenue = data.map(item => item.total_amount);
+
+        // Chart for Total Sales
+        new Chart(salesCtx, {
+            type: 'bar',
+            data: {
+                labels: categories,
+                datasets: [
+                    {
+                        label: 'Total Sales',
+                        data: totalSales,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Chart for Revenue
+        new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: categories,
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: revenue,
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+
+    fetchSalesData();
+</script>
+
+</body>
+</html>

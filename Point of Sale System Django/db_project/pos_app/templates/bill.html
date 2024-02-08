@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Details</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Bill Details</h1>
+<div id="billContent">
+
+    <table id="billTable">
+        <thead>
+            <tr>
+                <th>Item ID</th>
+                <th>Quantity</th>
+                <th>Item Name</th>
+                <th>Category Name</th>
+                <th>Price</th>
+                
+            </tr>
+        </thead>
+        <tbody id="billTableBody"></tbody>
+    </table>
+    <p>Grand Total: <span id="grandTotal"></span></p>
+    <p>Payment Type: <span id="PaymentType"></span></p>
+     <p>Tendered: <span id="Tendered"></span></p>
+      <p>Change: <span id="Change"></span></p>
+    </div>
+    
+
+    <button onclick="generatePDF()">Print Bill</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.1/html2pdf.bundle.js" defer></script>
+<script>
+    var grandTotal = 0;
+    var itemIds = [];
+    var quantities = [];
+    var itemNames = [];
+    var categoryNames = [];
+    var prices = [];
+    var payType = 0;
+    var tendered = 0;
+    var change = 0;
+
+
+    window.onload = function () {
+        // Your existing code to retrieve and display data
+        var urlParams = new URLSearchParams(window.location.search);
+        grandTotal = parseFloat(urlParams.get('grandTotal')) || 0;
+        itemIds = urlParams.getAll('item_id[]');
+        quantities = urlParams.getAll('quantity[]');
+        itemNames = urlParams.getAll('item_name[]');
+        categoryNames = urlParams.getAll('category_name[]');
+        prices = urlParams.getAll('price[]');
+        payType = urlParams.get('payType');
+        
+
+        console.log('Grand Total:', grandTotal);
+        console.log('Item IDs:', itemIds);
+        console.log('Item Names:', itemNames);
+        console.log('Prices:', prices);
+        console.log('Category Names:', categoryNames);
+        console.log('Quantities:', quantities);
+        console.log('payType:', payType);
+        if(payType == 'cash'){
+            tendered = parseFloat(urlParams.get('tendered'));
+            console.log('tendered: ',tendered);
+            change = parseFloat(urlParams.get('change'));
+            console.log('change: ',change);
+        }
+
+
+        // Display grand total
+        document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
+        document.getElementById('PaymentType').textContent = payType;
+        document.getElementById('Tendered').textContent = tendered;
+         document.getElementById('Change').textContent = change;
+
+        // Populate the table
+        var tableBody = document.getElementById('billTableBody');
+        for (var i = 0; i < itemIds.length; i++) {
+            var row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${itemIds[i]}</td>
+                <td>${quantities[i]}</td>
+                <td>${itemNames[i]}</td>
+                <td>${categoryNames[i]}</td>
+                <td>${prices[i]}</td>
+            `;
+            tableBody.appendChild(row);
+        }
+    }
+
+     function generatePDF() {
+        var element = document.getElementById('billContent');
+
+        html2pdf(element, {
+            margin: 10,
+            filename: 'bill.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'b2', orientation: 'portrait' }
+        });
+    }
+</script>
+   
+</script>
+
+
+</body>
+</html>

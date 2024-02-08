@@ -1,0 +1,329 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout Page</title>
+    <style>
+       body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .change {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Checkout Page</h1>
+    </header>
+
+    <main>
+        <form id="checkoutForm">
+            <!-- Display total payable amount from URL parameter -->
+            <label for="totalPayable">Total Payable Amount:</label>
+            <input type="text" id="totalPayable" name="totalPayable" value="{{ request.GET.grandTotal }}" readonly>
+
+
+     <!-- 
+        <label for="customer_id">Customer ID (optional)</label>
+            <input type="text" id="customer_id" name="customer_id" >
+         -->
+
+
+           
+
+            <label for="paymentType">Payment Type:</label>
+            <select id="paymentType" name="paymentType" onchange="toggleFields()">
+                <option value="None" default >NONE</option>
+                <option value="debitCard">Debit Card</option>
+                <option value="cash">Cash</option>
+            </select>
+
+            <!-- Display the "Enter card number" field only when payment type is debitCard -->
+            <div id="debitCardField" style="display: none;">
+                <label for="cardNumber">Enter Card Number:</label>
+                <input type="text" id="cardNumber" name="cardNumber">
+            </div>
+
+            <!-- Display the "Total Cash Paid" field only when payment type is cash -->
+            <div id="cashField" style="display: none;">
+                <label for="totalCashPaid">Total Cash Paid:</label>
+                <input type="number" id="totalCashPaid" name="totalCashPaid" onchange="calculateChange()">
+            </div>
+
+            <!-- Display the calculated change only when payment type is cash -->
+            <div id="changeField" class="result" style="display: none;">
+                <p>Change: <span id="changeResult">N/A</span></p>
+            </div>
+        </form>
+        {% csrf_token %}
+        <button type="button" onclick="confirmOrder()">Confirm Order</button>
+    </main>
+
+    <script>
+   
+
+    
+        
+   
+        var change;
+        var tendered;
+        function toggleFields() {
+            var paymentType = document.getElementById("paymentType").value;
+            var debitCardField = document.getElementById("debitCardField");
+            var cashField = document.getElementById("cashField");
+            var changeField = document.getElementById("changeField");
+
+            if (paymentType === "debitCard") {
+                debitCardField.style.display = "block";
+                cashField.style.display = "none";  // Hide cash field
+                changeField.style.display = "none";  // Hide change field
+            } else if (paymentType === "cash") {
+                debitCardField.style.display = "none";  // Hide card number field
+                cashField.style.display = "block";
+                changeField.style.display = "block";
+            } else {
+                debitCardField.style.display = "none";  // Hide card number field
+                cashField.style.display = "none";  // Hide cash field
+                changeField.style.display = "none";  // Hide change field
+            }
+
+            // Reset change result when changing payment type
+            document.getElementById("changeResult").innerText = "N/A";
+        }
+
+        function calculateChange() {
+            var totalPayable = parseFloat(document.getElementById("totalPayable").value);
+            var totalCashPaid = parseFloat(document.getElementById("totalCashPaid").value) || 0;
+            var changeResultElement = document.getElementById("changeResult");
+            var changeField = document.getElementById("changeField");
+
+            if (totalCashPaid >= totalPayable) {
+                tendered = totalCashPaid;
+                change = totalCashPaid - totalPayable;
+                changeResultElement.innerText = change.toFixed(2);
+                changeResultElement.classList.add("change");
+                changeField.style.display = "block";
+            } else {
+                // Display an error message or handle insufficient cash
+                changeResultElement.innerText = "Insufficient Cash";
+                changeResultElement.classList.remove("change");
+                changeField.style.display = "block";
+            }
+        }
+        function confirmOrder() {
+         /*
+    var customer_id = document.getElementById("customer_id").value.trim();
+    console.log('customer_id', customer_id);
+    var cust_flag = false;
+    var cust_dict = { customer_id: customer_id, };
+    console.log("Customer ID: ", customer_id);
+
+    if (customer_id.trim() !== '') {
+        console.log("Reached Here (1st Condition)");
+        fetch('/check-customer/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(cust_dict)
+        })
+        .then(response => response.json())
+        .then(data => {
+            cust_flag = true;
+            console.log('Response from customer-check:', data);
+        })
+        .catch(error => {
+            console.error('Error during customer-check request:', error);
+        });
+    } else if (customer_id.trim() =='') {
+        cust_flag = true;
+    }
+    
+
+   
+
+           console.log("Customer Flag",cust_flag)
+
+        */
+            var changeResultElement = document.getElementById("changeResult");
+            var paymentType = document.getElementById("paymentType").value;
+            if(paymentType == 'None'){alert("Select a payment type")}
+            else if(changeResultElement.innerText.trim() == 'Insufficient Cash' ||changeResultElement.innerText.trim() == 'N/A' ){alert("Insufficient Cash")}
+            else{
+
+         
+            // Display a confirmation prompt
+            var confirmed = confirm("Are you sure you want to confirm this order?");
+            var urlParams = new URLSearchParams(window.location.search);
+            var grandTotal = parseFloat(urlParams.get('grandTotal')) || 0;
+            if (confirmed) {
+                var currentURL = window.location.href;
+                var itemIds = urlParams.getAll('item_id[]');
+                var itemNames = urlParams.getAll('item_name[]');
+                var prices = urlParams.getAll('price[]');
+                var categoryNames = urlParams.getAll('category_name[]');
+                var quantities = urlParams.getAll('quantity[]');
+           
+            console.log('Grand Total:', grandTotal);
+            console.log('Item IDs:', itemIds);
+            console.log('Item Names:', itemNames);
+            console.log('Prices:', prices);
+            console.log('Category Names:', categoryNames);
+            console.log('Quantities:', quantities);
+            var payType = document.getElementById("paymentType").value;
+            var currentDate = new Date();
+
+            // Get the current date components
+            var year = currentDate.getFullYear();
+            var month = currentDate.getMonth() + 1; // Months are zero-indexed, so we add 1
+            var day = currentDate.getDate();
+
+            // Get the current time components
+            var hours = currentDate.getHours();
+            var minutes = currentDate.getMinutes();
+            var seconds = currentDate.getSeconds();
+
+            // Combine date components into a string
+            var date = year + '-' + (month < 10 ? '0' : '') + month + '-' + (day < 10 ? '0' : '') + day;
+
+            // Combine time components into a string
+            var time = (hours < 10 ? '0' : '') + hours + ':' + (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+            console.log('Time: ',time);
+            console.log('Date: ',date);
+
+
+
+             var postData = {
+            itemIds: itemIds,
+            quantities: quantities,
+            grandTotal: grandTotal,
+             payType: payType,
+             time: time,
+             date: date,
+             };
+             var billData = {
+                 itemIds: itemIds,
+                quantities: quantities,
+                grandTotal: grandTotal,
+                itemNames: itemNames,
+                categoryNames: categoryNames,
+                prices: prices,
+             }
+             
+
+             fetch('/checkout-process/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // Add any other headers you may need, such as authentication headers
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(postData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        var params = new URLSearchParams();
+        params.append('grandTotal', grandTotal.toFixed(2));
+        var paymentType = document.getElementById("paymentType").value;
+
+        for (var j = 0; j < itemIds.length; j++) {
+            params.append('item_id[]', itemIds[j]);
+            params.append('item_name[]', itemNames[j]);
+            params.append('price[]', prices[j]);
+            params.append('category_name[]', categoryNames[j]);
+            params.append('quantity[]', quantities[j]);
+            
+
+        }    
+        params.append('payType',paymentType);
+            if(paymentType == 'cash'){
+                params.append('tendered',tendered);
+                params.append('change',change);
+            }
+        console.log('Checkout process response:', data);
+         alert("Order Confirmed!");
+         var url = 'checkout-process/bill?' + params.toString();
+         window.open(url, '_blank');
+    })
+    .catch(error => {
+        // Handle errors during the fetch request
+        console.error('Error during checkout process:', error);
+        
+    }
+    );
+        
+              
+            } else {
+                // Handle the case when the user cancels the confirmation
+                alert("Order not confirmed.");
+            }
+
+        }
+        }
+
+    </script>
+</body>
+</html>

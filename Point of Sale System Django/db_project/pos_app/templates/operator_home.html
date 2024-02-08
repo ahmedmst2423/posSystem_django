@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    header {
+      background-color: #333;
+      color: #fff;
+      padding: 10px;
+      font-size: 24px;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #logoutButton {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+    }
+
+    #userSalutation {
+      background-color: #3498db;
+      color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    #userSalutation p {
+      margin: 0;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>Dashboard</header>
+  <div id="userSalutation">
+    <p>Welcome {{request.user.first_name}} {{request.user.last_name}} </p>
+  </div>
+
+  <button id="dashboardButton" onclick="redirectTo('operator-dashboard')">Operator Dashboard</button>
+  <button id="salesButton" onclick="redirectTo('sales')">Sales Report</button>
+  <button id="itemListButton" onclick="redirectTo('item-list')">Item List</button>
+
+  <div class="logout">
+        <form method="get" action="{% url 'operator-logout' %}">
+            {% csrf_token %}
+            <button  id = 'logoutButton'type="submit">Logout</button>
+        </form>
+    </div>
+    <script>
+        function redirectTo(path) {
+            window.location.href = path;
+        }
+    </script>
+
+</body>
+</html>

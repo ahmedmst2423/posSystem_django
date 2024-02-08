@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operator Dashboard</title>
+    <style>
+       body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .inputForm {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 300px; /* Make the form box smaller */
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .table-wrapper {
+            max-width: 800px;
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+        }
+
+        tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+        tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        button#proceedToCheckoutButton {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px 15px;
+            margin-top: 20px;
+        }
+
+        button#proceedToCheckoutButton:hover {
+            background-color: #45a049;
+        }
+
+        .logout {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+    
+</head>
+<body>
+
+    <header>
+        <h1>Operator Dashboard</h1>
+    </header>
+
+    <main>
+        <div class="inputForm">
+            <form id="addItemForm" method="get" action="{% url 'add-item' %}">
+                {% csrf_token %}
+                <label for="item_id">Item ID:</label>
+                <input type="text" id="item_id" name="item_id" required>
+                <label for="QTY">Quantity</label>
+                <input type="number" name="QTY" id="QTY" required>
+                <button type="submit">Add Item</button>
+            </form>
+        </div>
+
+        <!-- Dynamic List -->
+        <div class="item-list" id="itemList">
+            <h2>Added Items</h2>
+            <div class="table-wrapper">
+                <table id="itemTable">
+                    <tr>
+                        <th>Item ID</th>
+                        <th>Item Name</th>
+                        <th>Price (Rs)</th>
+                        <th>Category</th>
+                        <th>Delete Item</th>
+                        <th>QTY</th>
+                        
+                    </tr>
+                    <!-- Existing table rows will go here -->
+                </table>
+            </div>
+        </div>
+
+        <button id="proceedToCheckoutButton" onclick="openCheckoutPage()">Proceed to Checkout</button>
+        <div id = 'grandTotaldisplay'></div>
+    </main>
+
+    <!-- Logout button form -->
+    
+
+  
+
+</body>
+<script>
+    var grandTotal = 0;
+    document.getElementById('grandTotaldisplay').innerText = grandTotal.toFixed(2);
+    document.addEventListener("DOMContentLoaded", function () {
+        // Handle form submission
+    document.getElementById("addItemForm").addEventListener("submit", function (event) {
+    event.preventDefault(); // Prevent the form from submitting traditionally
+
+    // Get the item ID and quantity from the form
+    var itemId = document.getElementById("item_id").value;
+    var qty = document.getElementById('QTY').value;
+
+    // Make an AJAX request to validate the item ID
+    fetch('/add-items/?item_id=' + encodeURIComponent(itemId), {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Invalid Item ID');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Data Received:', data);
+
+       
+        if (data.status === 'success') {
+            var itemData = data.item_data;
+            var flag = false;
+            var table = document.getElementById("itemTable");
+            var newqty = parseInt(document.getElementById('QTY').value)
+            if(newqty > itemData.stock)
+            {
+                alert("Insufficient Stock") ;
+                document.getElementById("item_id").value = '';
+                document.getElementById("QTY").value = '';
+            }
+            else{
+
+            
+            for (var i = 1; i < table.rows.length; i++) {
+            var row = table.rows[i];
+            var cell = row.cells[0]; // Assuming the first cell contains the item_id
+
+            console.log('Checking row:', i, 'Cell content:', cell.innerText);
+
+            // Convert itemId to a string before using trim()
+            if (String(itemData.item_id).trim() === cell.innerText.trim()) {
+                var current_qty = parseInt(row.cells[5].innerText);
+                
+                var price = parseInt(row.cells[2].innerText)
+                console.log(current_qty)
+                row.cells[5].innerText = current_qty + newqty;
+                grandTotal+= (price*newqty);
+                //console.log('Price: %s%',price)
+                document.getElementById('grandTotaldisplay').innerText = grandTotal.toFixed(2);
+                flag = true;
+                document.getElementById("item_id").value = '';
+            document.getElementById("QTY").value = '';
+                break;
+            }
+    }
+    if(!flag){// Update the table
+            var table = document.getElementById("itemTable");
+            var row = table.insertRow(-1);
+
+            var cell1 = row.insertCell(0);
+            var cell2 = row.insertCell(1);
+            var cell3 = row.insertCell(2);
+            var cell4 = row.insertCell(3);
+            var cell5 = row.insertCell(4);
+            var cell6 = row.insertCell(5);
+            
+
+            cell1.innerHTML = itemData.item_id;
+            cell2.innerHTML = itemData.item_name;
+            cell3.innerHTML = itemData.price;
+            cell4.innerHTML = itemData.category_name;
+            cell6.innerHTML = qty;
+            grandTotal+= itemData.price * qty;
+            document.getElementById('grandTotaldisplay').innerText = grandTotal.toFixed(2);
+            
+
+
+            // You might need to get the 'qty' value from somewhere as it's not defined in your code
+
+            var deleteButton = document.createElement("button");
+            deleteButton.innerHTML = "Delete";
+            deleteButton.addEventListener("click", function () {
+                deleteItem(itemData.item_id);
+            });
+
+            cell5.appendChild(deleteButton);
+
+            // Clear the input fields
+            document.getElementById("item_id").value = '';
+            document.getElementById("QTY").value = '';
+            // document.getElementById("qty").value = ''; // Uncomment and provide a value for 'qty'}
+    }
+        }} else {
+            alert('Invalid Item ID');
+            // Clear the input fields
+            document.getElementById("item_id").value = '';
+            document.getElementById("QTY").value = '';
+            // document.getElementById("qty").value = ''; // Uncomment and provide a value for 'qty'
+        }
+    })
+    .catch(error => {
+        console.log('Error Found:', error);
+        alert('Error: ' + error.message);
+
+        // Clear the input fields
+        document.getElementById("item_id").value = '';
+        document.getElementById("QTY").value = '';
+        // document.getElementById("qty").value = ''; // Uncomment and provide a value for 'qty'
+    });
+    
+});
+
+
+
+        // Function to handle the delete button click
+    function deleteItem(itemId) {
+    var table = document.getElementById("itemTable");
+    var flag = false;
+
+    for (var i = 1; i < table.rows.length; i++) {
+        var row = table.rows[i];
+        var cell = row.cells[0]; // Assuming the first cell contains the item_id
+
+        console.log('Checking row:', i, 'Cell content:', cell.innerText);
+
+        // Convert itemId to a string before using trim()
+        if (String(itemId).trim() === cell.innerText.trim()) {
+            var price = parseFloat(row.cells[2].innerText); // Assuming price is in the third cell
+            var quantity = parseInt(row.cells[5].innerText);
+            grandTotal-= (price* quantity);
+            document.getElementById('grandTotaldisplay').innerText = grandTotal.toFixed(2);
+            table.deleteRow(i);
+            alert('Item deleted successfully');
+            flag = true;
+            break;
+        }
+    }
+
+    if (!flag) {
+        alert('Error Deleting Item');
+    }
+}
+    
+
+   
+});
+      function openCheckoutPage() {
+         var gt = parseFloat(document.getElementById('grandTotaldisplay').innerText);
+         if(gt == 0){
+            alert("No items added!!!!!");
+            return;
+         }
+        // Get table data
+        var table = document.getElementById("itemTable");
+        var items = [];
+
+        for (var i = 1; i < table.rows.length; i++) {
+            var row = table.rows[i];
+            var item = {
+                item_id: row.cells[0].innerText,
+                item_name: row.cells[1].innerText,
+                price: row.cells[2].innerText,
+                category_name: row.cells[3].innerText,
+                quantity: row.cells[5].innerText
+            };
+            items.push(item);
+        }
+
+        // Get grand total
+        var gt = parseFloat(document.getElementById('grandTotaldisplay').innerText);
+
+        // Construct URL parameters
+        var params = new URLSearchParams();
+        params.append('grandTotal', gt.toFixed(2));
+
+        for (var j = 0; j < items.length; j++) {
+            var item = items[j];
+            params.append('item_id[]', item.item_id);
+            params.append('item_name[]', item.item_name);
+            params.append('price[]', item.price);
+            params.append('category_name[]', item.category_name);
+            params.append('quantity[]', item.quantity);
+        }
+
+        // Construct the final URL
+        var checkoutURL = 'checkout-page?' + params.toString();
+
+        // Open the checkout page in a new window
+        window.open(checkoutURL, 'checkout', 'width=1000, height=1000');
+    }
+
+
+</script>
+</html>
